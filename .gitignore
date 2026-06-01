@@ -17,6 +17,8 @@ storage/
 *.log
 *.sqlite3
 *.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
 frontend/.vite/
 frontend/coverage/
 backend/storage/

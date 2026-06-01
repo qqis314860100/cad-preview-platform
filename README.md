@@ -19,7 +19,8 @@ React 前端
 - 上传接口会把文件分块写入磁盘，不再一次性塞进内存。
 - 后端会创建 asset 和 job，转换任务在后台线程执行。
 - STL 文件可以转换成 GLB 预览产物。
-- STEP / STP / X_T / SolidWorks 文件会进入明确的“需要外部 CAD 转换器”状态。
+- STEP / STP 文件可以通过 CadQuery/OCP 开发版转换器生成 GLB。
+- X_T / SolidWorks 文件会进入明确的“需要外部 CAD 转换器”状态。
 - 前端支持上传、上传进度、任务轮询、产物列表、GLB 预览。
 - 项目已准备好 Git、架构文档和基础检查脚本。
 
@@ -84,7 +85,7 @@ http://127.0.0.1:5173
 
 - 用 Redis + Celery/RQ/Arq 替换进程内线程池。
 - 用 S3 / MinIO / OSS 替换本地磁盘存储。
-- 接入商业 CAD 转换器，处理 STEP、X_T、SolidWorks。
+- 接入商业 CAD 转换器，处理大文件 STEP、X_T、SolidWorks。
 - 生成 GLB 时加入 Draco / Meshopt 压缩。
 - 对超大装配生成 3D Tiles 和多级 LOD。
 - 加入用户权限、配额、任务取消、失败重试、文件保留策略。

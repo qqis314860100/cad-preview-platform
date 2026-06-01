@@ -70,12 +70,13 @@ CAD 软件自动化服务
 当前已实现：
 
 - STL -> GLB：本地转换，适合验证 artifact-first 流程。
+- STEP/STP -> GLB：CadQuery/OCP 开发版转换器，适合本地验证和中小文件 fallback。
 
 计划接入：
 
-- STEP/STP -> GLB / 3D Tiles：OpenCascade、CAD Exchanger、HOOPS Exchange 等。
 - X_T -> GLB / STEP：CAD Exchanger、HOOPS Exchange、Parasolid 兼容转换器。
 - SolidWorks -> GLB / STEP：商业转换器或 SolidWorks 自动化服务。
+- 大文件 STEP/STP -> 3D Tiles：CAD Exchanger、HOOPS Exchange 或专门 tiler 服务。
 
 ## 为什么不能同步转换
 

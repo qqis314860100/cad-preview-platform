@@ -6,3 +6,4 @@ numpy==2.2.1
 trimesh==4.5.3
 pygltflib==1.16.3
 scipy==1.15.0
+cadquery==2.7.0
