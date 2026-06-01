@@ -15,6 +15,9 @@
 - 改结构化数据提取前读 `docs/METADATA.md`。
 - 后端入口：`backend/app/main.py`。
 - 前端入口：`frontend/src/App.tsx`。
+- 前端组件：`frontend/src/components/`。
+- 前端上传和轮询流程：`frontend/src/hooks/useCadUpload.ts`。
+- 后端结构化提取器：`backend/app/services/metadata_extractors/`。
 
 ## 硬性规则
 

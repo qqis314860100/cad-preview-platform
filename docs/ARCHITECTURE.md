@@ -26,6 +26,12 @@ backend/app/api/
 backend/app/services/
   业务服务层。负责文件存储、数据库访问、产物记录、转换调度。
 
+backend/app/services/converters/
+  预览产物转换器。每个转换器只负责一种或一类输入格式。
+
+backend/app/services/metadata_extractors/
+  结构化数据提取器。每种格式独立一个文件，避免把 STEP、STL、X_T 规则混在一起。
+
 backend/app/workers/
   后台任务层。当前用线程池做本地开发版本，后续可替换成 Celery/RQ。
 
