@@ -62,3 +62,10 @@ class ArtifactOut(BaseModel):
 class UploadResponse(BaseModel):
     asset: AssetOut
     job: JobOut
+
+
+class ConverterOut(BaseModel):
+    name: str
+    supported_formats: list[str]
+    available: bool
+    message: str

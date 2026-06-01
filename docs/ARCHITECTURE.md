@@ -78,6 +78,8 @@ CAD 软件自动化服务
 - SolidWorks -> GLB / STEP：商业转换器或 SolidWorks 自动化服务。
 - 大文件 STEP/STP -> 3D Tiles：CAD Exchanger、HOOPS Exchange 或专门 tiler 服务。
 
+外部转换器接入细节见 `docs/CONVERTERS.md`。
+
 ## 为什么不能同步转换
 
 几百 MB / GB 级 CAD 文件转换可能需要几十秒到数分钟，内存可能达到数 GB。如果放在 HTTP 请求里同步执行，会带来：

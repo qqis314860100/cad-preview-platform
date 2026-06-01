@@ -11,6 +11,13 @@ from app.services.converters.base import ConversionArtifact, ConversionResult
 class StlConverter:
     name = "stl-trimesh"
     supported_formats = {"stl"}
+    production_ready = True
+
+    def available(self) -> bool:
+        return True
+
+    def status_message(self) -> str:
+        return "内置 STL 网格转换器可用。"
 
     def convert(self, source: Path, artifact_dir: Path) -> ConversionResult:
         """把 STL 网格转换成 GLB。
@@ -52,4 +59,3 @@ class StlConverter:
                 )
             ],
         )
-

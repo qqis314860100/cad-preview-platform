@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Box, CheckCircle2, CloudUpload, Database, FileArchive, Loader2 } from "lucide-react";
-import { Artifact, Asset, Job, artifactUrl, getAsset, getJob, listArtifacts, uploadAsset } from "./api/client";
+import { AlertTriangle, Box, CheckCircle2, CloudUpload, Cpu, Database, FileArchive, Loader2 } from "lucide-react";
+import {
+  Artifact,
+  Asset,
+  ConverterInfo,
+  Job,
+  artifactUrl,
+  getAsset,
+  getJob,
+  listArtifacts,
+  listConverters,
+  uploadAsset,
+} from "./api/client";
 
 type UploadState = {
   asset?: Asset;
@@ -15,10 +26,17 @@ const terminalStates = new Set(["completed", "blocked", "failed"]);
 export function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [state, setState] = useState<UploadState>({ artifacts: [], uploadProgress: 0 });
+  const [converters, setConverters] = useState<ConverterInfo[]>([]);
   const primaryArtifact = useMemo(
     () => state.artifacts.find((artifact) => artifact.kind === "glb") ?? state.artifacts[0],
     [state.artifacts]
   );
+
+  useEffect(() => {
+    listConverters()
+      .then(setConverters)
+      .catch((error) => setState((current) => ({ ...current, error: String(error) })));
+  }, []);
 
   useEffect(() => {
     if (!state.job || terminalStates.has(state.job.status)) return;
@@ -86,6 +104,20 @@ export function App() {
           <Metric label="大小" value={formatBytes(state.asset?.size_bytes)} />
           <Metric label="任务" value={state.job?.status ?? "idle"} />
         </section>
+
+        <section className="converter-stack">
+          <h3>转换器状态</h3>
+          {converters.map((converter) => (
+            <div className="converter-line" key={converter.name}>
+              <span className={converter.available ? "dot ok" : "dot off"} />
+              <div>
+                <strong>{converter.name}</strong>
+                <small>{converter.supported_formats.join(" / ")}</small>
+                <p>{converter.message}</p>
+              </div>
+            </div>
+          ))}
+        </section>
       </aside>
 
       <section className="stage">
@@ -131,6 +163,11 @@ export function App() {
             icon={<AlertTriangle size={18} />}
             title="大文件规则"
             value="请求只保存文件；转换、切片、压缩都在后台任务里执行。"
+          />
+          <InfoCard
+            icon={<Cpu size={18} />}
+            title="外部转换器"
+            value="X_T / SolidWorks 通过 CAD_EXTERNAL_CONVERTER_COMMAND 接入商业或内部转换服务。"
           />
         </section>
 

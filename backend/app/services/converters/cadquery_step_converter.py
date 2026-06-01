@@ -12,6 +12,19 @@ from app.services.converters.colors import extract_step_primary_rgb, rgba255
 class CadQueryStepConverter:
     name = "cadquery-ocp-step"
     supported_formats = {"step"}
+    production_ready = False
+
+    def available(self) -> bool:
+        try:
+            import cadquery  # noqa: F401
+        except ImportError:
+            return False
+        return True
+
+    def status_message(self) -> str:
+        if self.available():
+            return "CadQuery/OCP 已安装，STEP 开发版转换器可用；大文件生产建议使用商业转换器。"
+        return "CadQuery/OCP 未安装，STEP 转换不可用。"
 
     def convert(self, source: Path, artifact_dir: Path) -> ConversionResult:
         """开发版 STEP -> GLB 转换器。
@@ -21,14 +34,14 @@ class CadQueryStepConverter:
         接 CAD Exchanger、HOOPS Exchange 或专门的 3D Tiles 生成服务。
         """
 
-        try:
-            from cadquery import importers
-        except ImportError:
+        if not self.available():
             return ConversionResult(
                 status="blocked",
                 message="STEP converter is not installed. Install CadQuery/OCP or configure an external CAD converter.",
                 artifacts=[],
             )
+
+        from cadquery import importers
 
         workplane = importers.importStep(str(source))
         vertices: list[list[float]] = []
@@ -76,4 +89,3 @@ class CadQueryStepConverter:
                 )
             ],
         )
-

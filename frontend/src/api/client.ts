@@ -36,6 +36,13 @@ export interface UploadResponse {
   job: Job;
 }
 
+export interface ConverterInfo {
+  name: string;
+  supported_formats: string[];
+  available: boolean;
+  message: string;
+}
+
 export async function uploadAsset(file: File, onProgress?: (sent: number, total: number) => void): Promise<UploadResponse> {
   // 使用 XMLHttpRequest 是为了拿到上传进度。
   // fetch 原生不方便汇报“已上传多少字节”，大文件上传时用户会没有反馈。
@@ -76,6 +83,12 @@ export async function listArtifacts(assetId: string): Promise<Artifact[]> {
   const response = await fetch(`/api/assets/${assetId}/artifacts`);
   if (!response.ok) throw new Error(await response.text());
   return response.json() as Promise<Artifact[]>;
+}
+
+export async function listConverters(): Promise<ConverterInfo[]> {
+  const response = await fetch("/api/converters");
+  if (!response.ok) throw new Error(await response.text());
+  return response.json() as Promise<ConverterInfo[]>;
 }
 
 export function artifactUrl(url: string): string {

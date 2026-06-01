@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     database_path: Path = Path("backend/storage/cad_preview.sqlite3")
     allowed_origins: str = "http://127.0.0.1:5173,http://localhost:5173"
     max_upload_bytes: int = 5 * 1024 * 1024 * 1024
+    external_converter_command: str = ""
+    external_converter_timeout_seconds: int = 3600
 
     model_config = SettingsConfigDict(
         env_prefix="CAD_",

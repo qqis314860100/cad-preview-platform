@@ -32,7 +32,13 @@ class Converter(Protocol):
 
     name: str
     supported_formats: set[str]
+    production_ready: bool
 
     def convert(self, source: Path, artifact_dir: Path) -> ConversionResult:
         """把源文件转换成浏览器可加载的预览产物。"""
 
+    def available(self) -> bool:
+        """当前运行环境是否能使用这个转换器。"""
+
+    def status_message(self) -> str:
+        """给前端和运维看的可读状态说明。"""

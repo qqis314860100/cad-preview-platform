@@ -26,3 +26,16 @@ def find_converter(file_format: str) -> Converter | None:
             return converter
     return None
 
+
+def list_converter_status() -> list[dict]:
+    """返回所有转换器状态，供前端和运维确认当前能力。"""
+
+    return [
+        {
+            "name": converter.name,
+            "supported_formats": sorted(converter.supported_formats),
+            "available": converter.available(),
+            "message": converter.status_message(),
+        }
+        for converter in CONVERTERS
+    ]

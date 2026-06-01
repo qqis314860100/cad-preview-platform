@@ -22,6 +22,7 @@ React 前端
 - STEP / STP 文件可以通过 CadQuery/OCP 开发版转换器生成 GLB。
 - X_T / SolidWorks 文件会进入明确的“需要外部 CAD 转换器”状态。
 - 前端支持上传、上传进度、任务轮询、产物列表、GLB 预览。
+- 前端会显示当前转换器可用状态，便于判断 STEP / X_T / SolidWorks 能否转换。
 - 项目已准备好 Git、架构文档和基础检查脚本。
 
 ## 为什么要这样改
@@ -78,6 +79,7 @@ http://127.0.0.1:5173
 - `GET /api/jobs/{job_id}`：查看转换任务状态。
 - `GET /api/assets/{asset_id}/artifacts`：查看生成的预览产物。
 - `GET /api/artifacts/{asset_id}/{filename}`：下载或预览产物文件。
+- `GET /api/converters`：查看当前转换器可用状态。
 
 ## 面向大文件的下一步
 
@@ -105,5 +107,6 @@ frontend/
 
 docs/
   ARCHITECTURE.md   架构说明
+  CONVERTERS.md     外部转换器接入说明
   decisions/        关键技术决策记录
 ```

@@ -5,8 +5,9 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
-from app.models.schemas import ArtifactOut, AssetOut, AssetStatus, JobOut, JobStatus, UploadResponse
+from app.models.schemas import ArtifactOut, AssetOut, AssetStatus, ConverterOut, JobOut, JobStatus, UploadResponse
 from app.services import repository
+from app.services.converters.registry import list_converter_status
 from app.services.storage import detect_format, new_id, persist_upload
 from app.workers.queue import enqueue_conversion
 
@@ -17,6 +18,13 @@ router = APIRouter()
 @router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@router.get("/converters", response_model=list[ConverterOut])
+def list_converters() -> list[ConverterOut]:
+    """查看当前后端支持哪些转换器，以及它们是否可用。"""
+
+    return [ConverterOut(**item) for item in list_converter_status()]
 
 
 @router.post("/assets", response_model=UploadResponse)

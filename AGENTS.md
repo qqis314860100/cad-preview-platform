@@ -11,6 +11,7 @@
 
 - 先读 `README.md`，了解如何运行。
 - 再读 `docs/ARCHITECTURE.md`，了解为什么这样分层。
+- 接转换器前读 `docs/CONVERTERS.md`。
 - 后端入口：`backend/app/main.py`。
 - 前端入口：`frontend/src/App.tsx`。
 
