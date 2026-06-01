@@ -17,6 +17,12 @@ router = APIRouter()
 
 @router.get("/health")
 def health() -> dict[str, str]:
+    """健康检查接口。
+
+    这类接口通常给人或部署系统确认“服务是否活着”。
+    如果这里能返回 {"status": "ok"}，说明 FastAPI 进程已经正常启动。
+    """
+
     return {"status": "ok"}
 
 
@@ -40,11 +46,18 @@ async def upload_asset(file: UploadFile) -> UploadResponse:
     job_id = new_id()
 
     try:
+        # UploadFile 是 FastAPI 对 multipart/form-data 文件的封装。
+        # persist_upload 会分块读取文件，避免大 CAD 文件一次性进入内存。
         source_path, size_bytes, filename = await persist_upload(file, asset_id)
     except ValueError as exc:
+        # 上传超过限制时，返回 413 Payload Too Large。
+        # from exc 保留原始异常链，方便后端日志定位问题。
         raise HTTPException(status_code=413, detail=str(exc)) from exc
 
+    # 这里只根据文件后缀做“粗识别”。真正能不能预览，还要看转换器是否可用。
     file_format = detect_format(filename)
+
+    # asset 记录描述“源文件本身”：文件名、格式、大小、源文件保存在哪里。
     asset = repository.insert_asset(
         asset_id=asset_id,
         filename=filename,
@@ -53,6 +66,9 @@ async def upload_asset(file: UploadFile) -> UploadResponse:
         status=AssetStatus.queued,
         source_path=source_path,
     )
+
+    # job 记录描述“接下来要做的处理任务”：排队、处理中、完成、失败等。
+    # 前端拿到 job.id 后，会定时请求 /api/jobs/{job_id} 看进度。
     job = repository.insert_job(
         job_id=job_id,
         asset_id=asset_id,
@@ -68,6 +84,7 @@ async def upload_asset(file: UploadFile) -> UploadResponse:
 @router.get("/assets/{asset_id}", response_model=AssetOut)
 def get_asset(asset_id: str) -> AssetOut:
     try:
+        # repository 层返回普通 dict，Pydantic 模型负责把它变成稳定的 API 响应。
         return AssetOut(**repository.get_asset(asset_id))
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Asset not found") from exc
@@ -84,6 +101,8 @@ def get_job(job_id: str) -> JobOut:
 @router.get("/assets/{asset_id}/artifacts", response_model=list[ArtifactOut])
 def list_artifacts(asset_id: str) -> list[ArtifactOut]:
     try:
+        # 先确认 asset 存在。这样用户传错 asset_id 时，返回“源文件不存在”，
+        # 而不是一个空 artifact 列表，避免前端误判为“还没生成产物”。
         repository.get_asset(asset_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Asset not found") from exc
@@ -92,6 +111,12 @@ def list_artifacts(asset_id: str) -> list[ArtifactOut]:
 
 @router.get("/artifacts/{asset_id}/{filename}")
 def get_artifact_file(asset_id: str, filename: str) -> FileResponse:
+    """把产物文件返回给浏览器。
+
+    GLB、tileset.json、metadata.json 都走这个接口。
+    FileResponse 会让 FastAPI 以文件流的方式返回内容，适合浏览器直接加载。
+    """
+
     artifacts = repository.list_artifacts(asset_id)
     for artifact in artifacts:
         if artifact["filename"] == filename:
@@ -102,7 +127,8 @@ def get_artifact_file(asset_id: str, filename: str) -> FileResponse:
 
 
 def artifact_out(row: dict) -> ArtifactOut:
-    # 前端拿到的是产物 URL。大模型不能通过 API JSON 内联返回。
+    # 前端拿到的是产物 URL，不是产物内容。
+    # 例如 GLB 可能几十 MB，如果直接塞进 JSON，浏览器和后端都会很吃力。
     return ArtifactOut(
         id=row["id"],
         asset_id=row["asset_id"],

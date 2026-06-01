@@ -4,6 +4,8 @@ import { formatBytes } from "../utils/format";
 import { Metric, Progress } from "./ui";
 
 interface SidebarProps {
+  // 这些 props 都来自 useCadUpload。
+  // Sidebar 不直接请求接口，只负责把状态显示出来、把用户动作回传给父级。
   asset?: Asset;
   converters: ConverterInfo[];
   job?: Job;
@@ -39,6 +41,8 @@ export function Sidebar({
           <input
             type="file"
             accept=".stl,.step,.stp,.x_t,.xmt_txt,.sldprt,.sldasm,.glb,.gltf"
+            // 用户选中文件时，只是把 File 对象放进浏览器状态。
+            // 真正上传发生在点击“上传并创建任务”之后。
             onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
           />
         </label>
@@ -57,6 +61,7 @@ export function Sidebar({
 
       <section className="converter-stack">
         <h3>转换器状态</h3>
+        {/* 这里展示的是后端实际可用能力，不是前端写死的格式说明。 */}
         {converters.map((converter) => (
           <div className="converter-line" key={converter.name}>
             <span className={converter.available ? "dot ok" : "dot off"} />

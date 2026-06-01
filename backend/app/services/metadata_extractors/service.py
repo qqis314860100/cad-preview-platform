@@ -18,10 +18,15 @@ def extract_structured_metadata(asset: dict[str, Any], source: Path) -> dict[str
     预览几何仍然交给转换器；这里生成的是给业务、搜索、排查问题看的 metadata.json。
     """
 
+    # 先创建一份所有格式都共有的外层结构。
+    # 这样前端可以稳定读取 schemaVersion/source/summary/details/limitations，
+    # 不需要为每种 CAD 格式写完全不同的判断逻辑。
     metadata = base_metadata(asset)
     file_format = str(asset["format"])
 
     try:
+        # 真正和格式相关的读取逻辑放到 fill_format_details。
+        # 这里保持“创建外壳 -> 填充详情 -> 返回”的简单流程。
         fill_format_details(metadata, file_format, source)
     except Exception as exc:  # 提取失败不能阻断上传链路，错误也写进 JSON 方便排查。
         metadata["summary"]["readable"] = False
@@ -37,11 +42,20 @@ def write_metadata_artifact(asset: dict[str, Any], source: Path, artifact_dir: P
     artifact_dir.mkdir(parents=True, exist_ok=True)
     target = artifact_dir / "metadata.json"
     data = extract_structured_metadata(asset, source)
+
+    # ensure_ascii=False 可以让中文直接写进 JSON，而不是变成 \u4e2d\u6587。
+    # indent=2 让文件更适合人类打开阅读。
     target.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     return target
 
 
 def base_metadata(asset: dict[str, Any]) -> dict[str, Any]:
+    """创建 metadata.json 的基础结构。
+
+    你可以把它理解成前端里先定义一个默认 state：
+    后续不同格式只是在 details 里补自己的字段。
+    """
+
     return {
         "schemaVersion": "1.0",
         "source": {
@@ -63,6 +77,12 @@ def base_metadata(asset: dict[str, Any]) -> dict[str, Any]:
 
 
 def fill_format_details(metadata: dict[str, Any], file_format: str, source: Path) -> None:
+    """根据文件格式补充 details。
+
+    这里使用一组简单 if，而不是复杂的类继承或插件系统。
+    当前格式数量少，保持直观比过早抽象更适合学习和维护。
+    """
+
     # 各格式的读取规则放在独立模块里，新增格式时只需要补一个 extractor。
     if file_format == "stl":
         metadata["details"]["stl"] = extract_stl_metadata(source)

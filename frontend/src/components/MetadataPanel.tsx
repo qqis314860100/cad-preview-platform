@@ -10,6 +10,11 @@ export function MetadataPanel({
   metadata?: StructuredMetadata;
   metadataArtifact?: Artifact;
 }) {
+  // metadata.details 是一个按格式变化的对象：
+  // - details.stl
+  // - details.step
+  // - details.parasolidXt
+  // 前端先取出这些分支，再按存在与否决定渲染哪个区块。
   const details = metadata?.details ?? {};
   const stl = details.stl as Record<string, unknown> | undefined;
   const step = details.step as Record<string, unknown> | undefined;
@@ -36,10 +41,12 @@ export function MetadataPanel({
       ) : (
         <>
           <div className="metadata-grid">
+            {/* source/summary 是所有格式都有的公共信息。 */}
             <KeyValue title="源文件" rows={metadata.source} />
             <KeyValue title="提取结论" rows={metadata.summary} />
           </div>
 
+          {/* 下面这些详情区块是按格式选择性渲染。 */}
           {stl ? <StlDetails data={stl} /> : null}
           {step ? <StepDetails data={step} /> : null}
           {xt ? <XtDetails data={xt} /> : null}
@@ -77,6 +84,8 @@ function StlDetails({ data }: { data: Record<string, unknown> }) {
 }
 
 function StepDetails({ data }: { data: Record<string, unknown> }) {
+  // TypeScript 不知道后端 JSON 的精确内部结构，所以这里用轻量类型断言。
+  // 生产项目可以进一步把 StructuredMetadata 拆成更严格的联合类型。
   const header = (data.header ?? {}) as Record<string, unknown>;
   const entities = (data.entities ?? {}) as Record<string, unknown>;
   const topTypes = (entities.topTypes ?? []) as Array<Record<string, unknown>>;
@@ -107,6 +116,7 @@ function StepDetails({ data }: { data: Record<string, unknown> }) {
             const rgb = Array.isArray(item.rgb) ? (item.rgb as number[]) : [0.8, 0.8, 0.8];
             return (
               <span key={`${item.name}-${index}`}>
+                {/* STEP 颜色是 0-1 小数，CSS rgb 需要 0-255 整数。 */}
                 <i style={{ backgroundColor: `rgb(${rgb.map((value) => Math.round(value * 255)).join(",")})` }} />
                 {String(item.name || "未命名颜色")}
               </span>
@@ -146,6 +156,8 @@ function XtDetails({ data }: { data: Record<string, unknown> }) {
 }
 
 function KeyValue({ title, rows }: { title: string; rows: Record<string, unknown> }) {
+  // 通用键值展示组件：适合展示后端返回的 JSON 对象。
+  // 这样 source、summary、HEADER、GLB 信息都能复用同一套 UI。
   return (
     <div className="metadata-card">
       <h4>{title}</h4>

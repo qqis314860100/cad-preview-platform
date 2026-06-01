@@ -176,9 +176,19 @@ frontend/
 docs/
   ARCHITECTURE.md                  架构说明
   CONVERTERS.md                    外部转换器接入说明
+  LEARNING_PYTHON.md               给前端开发者的 Python 学习导览
   METADATA.md                      结构化数据提取说明
   decisions/                       关键技术决策记录
 ```
+
+## 如果你是前端开发者
+
+建议先读 `docs/LEARNING_PYTHON.md`。它会按前端视角解释：
+
+- FastAPI 和 Express/Koa 怎么类比。
+- Pydantic 模型和 TypeScript interface 怎么类比。
+- Python 的 `.venv / pip / requirements.txt` 和 Node 的 `node_modules / npm / package.json` 怎么类比。
+- 当前项目应该按什么顺序读代码。
 
 ## 维护原则
 
