@@ -12,6 +12,7 @@
 - 先读 `README.md`，了解如何运行。
 - 再读 `docs/ARCHITECTURE.md`，了解为什么这样分层。
 - 接转换器前读 `docs/CONVERTERS.md`。
+- 改结构化数据提取前读 `docs/METADATA.md`。
 - 后端入口：`backend/app/main.py`。
 - 前端入口：`frontend/src/App.tsx`。
 
@@ -64,5 +65,6 @@ python3.11 scripts/smoke_check.py
 
 - 改上传逻辑时，要确认仍然是分块写入磁盘。
 - 改转换逻辑时，要确认仍然通过 job 状态反馈结果。
+- 改结构化数据逻辑时，要确认仍然生成 `metadata.json` artifact。
 - 改前端预览时，要确认加载的是 artifact URL，不是大 JSON。
 - 改架构决策时，需要更新 `docs/ARCHITECTURE.md` 或 `docs/decisions/`。

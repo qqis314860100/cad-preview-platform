@@ -40,10 +40,11 @@ backend/storage/
   -> 后端分块写入 backend/storage/assets/{asset_id}/source/
   -> 数据库写入 asset 记录
   -> 数据库写入 job 记录
+  -> 后台 worker 先生成 metadata.json
   -> 后台 worker 开始转换
   -> 转换器写入 backend/storage/assets/{asset_id}/artifacts/
   -> 前端轮询 job 状态
-  -> 前端拿 artifact URL 加载 GLB 或 3D Tiles
+  -> 前端拿 artifact URL 加载 GLB / 3D Tiles / metadata.json
 ```
 
 ## 产物优先策略
@@ -52,9 +53,20 @@ backend/storage/
 
 - 小模型：生成 `.glb`。
 - 大模型：生成 `tileset.json` 和 3D Tiles 分块文件。
-- 元数据：只返回小 JSON，例如面数、顶点数、包围盒、转换器信息。
+- 元数据：生成 `metadata.json`，例如 STEP HEADER、实体类型统计、颜色、STL 网格统计。
 
 这样前端可以按 URL 加载，而不是一次性解析巨大响应。
+
+## 结构化数据策略
+
+结构化数据不是完整 CAD 几何重建。它的目标是回答这些问题：
+
+- 这个文件是什么格式、大小、什么时候被处理？
+- STEP 里声明了哪些 `FILE_SCHEMA`、产品名、颜色和主要实体类型？
+- STL 有多少三角面，模型大概占多大空间？
+- X_T 明文里能看到哪些片段，但为什么仍需要 Parasolid 兼容转换器？
+
+因此后台 job 会先写出 `metadata.json`，再运行 GLB / 3D Tiles 转换。即使几何转换被阻塞，前端仍然可以展示已提取的结构化数据，便于判断下一步应该接哪个外部转换器。
 
 ## 转换器策略
 

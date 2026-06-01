@@ -21,7 +21,9 @@ React 前端
 - STL 文件可以转换成 GLB 预览产物。
 - STEP / STP 文件可以通过 CadQuery/OCP 开发版转换器生成 GLB。
 - X_T / SolidWorks 文件会进入明确的“需要外部 CAD 转换器”状态。
+- 后端会为每个上传文件生成 `metadata.json`，提取可读的结构化数据。
 - 前端支持上传、上传进度、任务轮询、产物列表、GLB 预览。
+- 前端会展示结构化数据，例如 STEP HEADER、实体类型统计、颜色、STL 网格统计、X_T 明文片段。
 - 前端会显示当前转换器可用状态，便于判断 STEP / X_T / SolidWorks 能否转换。
 - 项目已准备好 Git、架构文档和基础检查脚本。
 
@@ -81,6 +83,18 @@ http://127.0.0.1:5173
 - `GET /api/artifacts/{asset_id}/{filename}`：下载或预览产物文件。
 - `GET /api/converters`：查看当前转换器可用状态。
 
+## 结构化数据提取
+
+上传文件后，后台任务会先生成一个 `metadata.json` 产物。它不是完整 CAD 内核解析结果，而是从源文件中安全提取“能明文读出来、能用于业务判断”的信息：
+
+- STL：编码、三角面数量、顶点引用数量、包围盒。
+- STEP / STP：`HEADER` 字段、实体类型统计、`COLOUR_RGB` 颜色、产品名。
+- X_T：前 80 行明文片段、行数、数字 token 估算、常见关键词。
+- GLB：GLB 版本、chunk、mesh / material 数量。
+- SolidWorks：标记为需要外部转换器。
+
+详细说明见 `docs/METADATA.md`。
+
 ## 面向大文件的下一步
 
 当前第一版已经把架构切对，但还不是完整生产系统。继续往生产走，需要补这些能力：
@@ -108,5 +122,6 @@ frontend/
 docs/
   ARCHITECTURE.md   架构说明
   CONVERTERS.md     外部转换器接入说明
+  METADATA.md       结构化数据提取说明
   decisions/        关键技术决策记录
 ```

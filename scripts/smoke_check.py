@@ -20,6 +20,7 @@ REQUIRED_FILES = [
     "README.md",
     "AGENTS.md",
     "docs/ARCHITECTURE.md",
+    "docs/METADATA.md",
     "backend/app/main.py",
     "backend/app/api/routes.py",
     "frontend/src/App.tsx",

@@ -1,11 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Box, CheckCircle2, CloudUpload, Cpu, Database, FileArchive, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Box,
+  Braces,
+  CheckCircle2,
+  CloudUpload,
+  Cpu,
+  Database,
+  FileArchive,
+  Loader2,
+} from "lucide-react";
 import {
   Artifact,
   Asset,
   ConverterInfo,
   Job,
+  StructuredMetadata,
   artifactUrl,
+  fetchArtifactJson,
   getAsset,
   getJob,
   listArtifacts,
@@ -17,6 +29,7 @@ type UploadState = {
   asset?: Asset;
   job?: Job;
   artifacts: Artifact[];
+  structuredMetadata?: StructuredMetadata;
   uploadProgress: number;
   error?: string;
 };
@@ -29,6 +42,10 @@ export function App() {
   const [converters, setConverters] = useState<ConverterInfo[]>([]);
   const primaryArtifact = useMemo(
     () => state.artifacts.find((artifact) => artifact.kind === "glb") ?? state.artifacts[0],
+    [state.artifacts]
+  );
+  const metadataArtifact = useMemo(
+    () => state.artifacts.find((artifact) => artifact.kind === "metadata"),
     [state.artifacts]
   );
 
@@ -57,17 +74,34 @@ export function App() {
     return () => window.clearInterval(timer);
   }, [state.job, state.artifacts]);
 
+  useEffect(() => {
+    if (!metadataArtifact) return;
+
+    // metadata.json 是后端提取出的“明文结构化数据”。
+    // 它和 GLB 一样按 URL 加载，避免把所有内容塞进任务状态接口。
+    fetchArtifactJson<StructuredMetadata>(metadataArtifact.url)
+      .then((structuredMetadata) => setState((current) => ({ ...current, structuredMetadata })))
+      .catch((error) =>
+        setState((current) => ({ ...current, error: error instanceof Error ? error.message : String(error) }))
+      );
+  }, [metadataArtifact?.url]);
+
   async function submitUpload() {
     if (!selectedFile) return;
-    setState({ artifacts: [], uploadProgress: 0 });
+    setState({ artifacts: [], structuredMetadata: undefined, uploadProgress: 0 });
     try {
       const response = await uploadAsset(selectedFile, (sent, total) => {
         // 大文件上传可能持续很久，进度条能明确告诉用户“文件还在传”。
         setState((current) => ({ ...current, uploadProgress: total ? sent / total : 0 }));
       });
-      setState({ asset: response.asset, job: response.job, artifacts: [], uploadProgress: 1 });
+      setState({ asset: response.asset, job: response.job, artifacts: [], structuredMetadata: undefined, uploadProgress: 1 });
     } catch (error) {
-      setState({ artifacts: [], uploadProgress: 0, error: error instanceof Error ? error.message : String(error) });
+      setState({
+        artifacts: [],
+        structuredMetadata: undefined,
+        uploadProgress: 0,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -171,6 +205,8 @@ export function App() {
           />
         </section>
 
+        <StructuredMetadataPanel metadata={state.structuredMetadata} metadataArtifact={metadataArtifact} />
+
         <section className="artifact-table">
           <div className="table-head">
             <span>类型</span>
@@ -191,6 +227,162 @@ export function App() {
         </section>
       </section>
     </main>
+  );
+}
+
+function StructuredMetadataPanel({
+  metadata,
+  metadataArtifact,
+}: {
+  metadata?: StructuredMetadata;
+  metadataArtifact?: Artifact;
+}) {
+  const details = metadata?.details ?? {};
+  const stl = details.stl as Record<string, unknown> | undefined;
+  const step = details.step as Record<string, unknown> | undefined;
+  const xt = details.parasolidXt as Record<string, unknown> | undefined;
+  const glb = details.glb as Record<string, unknown> | undefined;
+  const solidworks = details.solidworks as Record<string, unknown> | undefined;
+
+  return (
+    <section className="metadata-panel">
+      <div className="section-title">
+        <div>
+          <Braces size={18} />
+          <h3>结构化数据</h3>
+        </div>
+        {metadataArtifact ? (
+          <a href={metadataArtifact.url} target="_blank" rel="noreferrer">
+            打开 metadata.json
+          </a>
+        ) : null}
+      </div>
+
+      {!metadata ? (
+        <p className="empty-copy">上传并处理后，这里会展示从源文件提取出的明文信息。</p>
+      ) : (
+        <>
+          <div className="metadata-grid">
+            <KeyValue title="源文件" rows={metadata.source} />
+            <KeyValue title="提取结论" rows={metadata.summary} />
+          </div>
+
+          {stl ? <StlDetails data={stl} /> : null}
+          {step ? <StepDetails data={step} /> : null}
+          {xt ? <XtDetails data={xt} /> : null}
+          {glb ? <KeyValue title="GLB 信息" rows={glb} /> : null}
+          {solidworks ? <KeyValue title="SolidWorks 信息" rows={solidworks} /> : null}
+
+          {metadata.limitations.length ? (
+            <div className="metadata-block">
+              <h4>限制说明</h4>
+              <ul>
+                {metadata.limitations.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </>
+      )}
+    </section>
+  );
+}
+
+function StlDetails({ data }: { data: Record<string, unknown> }) {
+  return (
+    <div className="metadata-block">
+      <h4>STL 网格统计</h4>
+      <div className="metadata-grid compact">
+        <Metric label="编码" value={String(data.encoding ?? "-")} />
+        <Metric label="三角面" value={String(data.triangleCount ?? "-")} />
+        <Metric label="顶点引用" value={String(data.vertexReferenceCount ?? "-")} />
+        <Metric label="包围盒" value={formatValue(data.bounds)} />
+      </div>
+    </div>
+  );
+}
+
+function StepDetails({ data }: { data: Record<string, unknown> }) {
+  const header = (data.header ?? {}) as Record<string, unknown>;
+  const entities = (data.entities ?? {}) as Record<string, unknown>;
+  const topTypes = (entities.topTypes ?? []) as Array<Record<string, unknown>>;
+  const colors = (data.colors ?? []) as Array<Record<string, unknown>>;
+  const products = (data.products ?? []) as string[];
+
+  return (
+    <div className="metadata-block">
+      <h4>STEP 结构</h4>
+      <div className="metadata-grid">
+        <KeyValue title="HEADER" rows={header} />
+        <KeyValue title="实体总览" rows={{ total: entities.total }} />
+      </div>
+
+      {topTypes.length ? (
+        <div className="entity-list">
+          {topTypes.slice(0, 12).map((item) => (
+            <span key={`${item.type}`}>
+              {String(item.type)} <b>{String(item.count)}</b>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {colors.length ? (
+        <div className="color-list">
+          {colors.slice(0, 12).map((item, index) => {
+            const rgb = Array.isArray(item.rgb) ? (item.rgb as number[]) : [0.8, 0.8, 0.8];
+            return (
+              <span key={`${item.name}-${index}`}>
+                <i style={{ backgroundColor: `rgb(${rgb.map((value) => Math.round(value * 255)).join(",")})` }} />
+                {String(item.name || "未命名颜色")}
+              </span>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {products.length ? <p className="plain-list">产品名：{products.join("、")}</p> : null}
+    </div>
+  );
+}
+
+function XtDetails({ data }: { data: Record<string, unknown> }) {
+  const keywords = (data.topKeywords ?? []) as Array<Record<string, unknown>>;
+  const preview = (data.textPreview ?? []) as string[];
+  return (
+    <div className="metadata-block">
+      <h4>Parasolid XT 明文片段</h4>
+      <div className="metadata-grid compact">
+        <Metric label="行数" value={String(data.lineCount ?? "-")} />
+        <Metric label="数字 Token" value={String(data.numericTokenEstimate ?? "-")} />
+        <Metric label="需要外部转换器" value={String(data.requiresExternalConverter ?? true)} />
+      </div>
+      {keywords.length ? (
+        <div className="entity-list">
+          {keywords.slice(0, 12).map((item) => (
+            <span key={`${item.keyword}`}>
+              {String(item.keyword)} <b>{String(item.count)}</b>
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {preview.length ? <pre className="text-preview">{preview.slice(0, 20).join("\n")}</pre> : null}
+    </div>
+  );
+}
+
+function KeyValue({ title, rows }: { title: string; rows: Record<string, unknown> }) {
+  return (
+    <div className="metadata-card">
+      <h4>{title}</h4>
+      {Object.entries(rows).map(([key, value]) => (
+        <div className="kv-row" key={key}>
+          <span>{key}</span>
+          <strong>{formatValue(value)}</strong>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -246,4 +438,16 @@ function formatBytes(size?: number) {
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   if (size < 1024 * 1024 * 1024) return `${(size / 1024 / 1024).toFixed(1)} MB`;
   return `${(size / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "boolean") return value ? "是" : "否";
+  if (typeof value === "number") return Number.isInteger(value) ? String(value) : value.toFixed(4);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "-";
+    return value.map(formatValue).join(" / ");
+  }
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
 }

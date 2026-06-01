@@ -43,6 +43,14 @@ export interface ConverterInfo {
   message: string;
 }
 
+export interface StructuredMetadata {
+  schemaVersion: string;
+  source: Record<string, unknown>;
+  summary: Record<string, unknown>;
+  details: Record<string, unknown>;
+  limitations: string[];
+}
+
 export async function uploadAsset(file: File, onProgress?: (sent: number, total: number) => void): Promise<UploadResponse> {
   // 使用 XMLHttpRequest 是为了拿到上传进度。
   // fetch 原生不方便汇报“已上传多少字节”，大文件上传时用户会没有反馈。
@@ -89,6 +97,12 @@ export async function listConverters(): Promise<ConverterInfo[]> {
   const response = await fetch("/api/converters");
   if (!response.ok) throw new Error(await response.text());
   return response.json() as Promise<ConverterInfo[]>;
+}
+
+export async function fetchArtifactJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(await response.text());
+  return response.json() as Promise<T>;
 }
 
 export function artifactUrl(url: string): string {
